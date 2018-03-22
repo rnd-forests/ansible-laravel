@@ -1,0 +1,21 @@
+---
+- hosts: app
+  become: yes
+
+  tasks:
+    - name: Update apt cache.
+      apt: update_cache=yes cache_valid_time=3600
+
+    - name: Install NGINX web server.
+      apt: name=nginx state=present
+
+    - name: Start and enable nginx service at system boot.
+      service: name=nginx state=started enabled=yes
+
+    - name: Adjust firewall to allow access to the nginx service.
+      ufw: name="Nginx HTTP" rule=allow state=enabled
+
+    - name: Allow OpenSSH connections.
+      ufw:
+        name: OpenSSH
+        rule: allow

@@ -1,0 +1,20 @@
+---
+- hosts: app
+  become: yes
+
+  tasks:
+    - name: Update apt cache.
+      command: apt update
+
+    - name: Install NGINX web server.
+      command: apt install -y nginx
+
+    - name: Start the nginx service.
+      command: systemctl start nginx
+
+    - name: Enable nginx service at system boot.
+      command: systemctl enable nginx
+
+    - name: Adjust firewall to allow access to the nginx service.
+      command: >
+        ufw allow 'NGINX HTTP'

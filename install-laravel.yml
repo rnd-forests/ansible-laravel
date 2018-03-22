@@ -1,0 +1,108 @@
+---
+- hosts: app
+  become: yes
+
+  vars_files:
+    - vars.yml
+    - secrets/database.yml
+
+  pre_tasks:
+    - name: Update apt cache.
+      apt: update_cache=yes cache_valid_time=3600
+
+    - name: Enable firewall.
+      ufw: state=enabled
+
+    - name: Allow OpenSSH connections.
+      ufw: name=OpenSSH rule=allow
+
+  handlers:
+    - name: restart Nginx
+      service: name=nginx state=restarted
+
+  tasks:
+    - name: Install software for apt repository management.
+      apt: name={{ item }} state=present
+      with_items:
+        - python3-apt
+        - python3-pycurl
+
+    - name: Add ondrej repository for later version of PHP
+      apt_repository: repo='ppa:ondrej/php' update_cache=yes
+
+    - name: Install NGINX, MySQL, PHP, PHP extensions and other dependencies.
+      apt: name={{ item }} state=present
+      with_items:
+        - git
+        - curl
+        - unzip
+        - openssl
+        - nginx
+        - php7.1-common
+        - php7.1-cli
+        - php7.1-dev
+        - php7.1-gd
+        - php7.1-curl
+        - php7.1-json
+        - php7.1-opcache
+        - php7.1-xml
+        - php7.1-mbstring
+        - php7.1-pdo
+        - php7.1-mysql
+        - php7.1-zip
+        - php-apcu
+        - libpcre3-dev
+        - python-mysqldb
+        - mysql-server
+
+    - name: Start NGINX, MySQL.
+      service: name={{ item }} state=started enabled=yes
+      with_items:
+        - nginx
+        - mysql
+
+    - name: Adjust firewall to allow access to the nginx service.
+      ufw: name='Nginx HTTP' rule=allow
+
+    - name: Remove the MySQL test database.
+      mysql_db: db=test state=absent
+
+    - name: Create a database for the application.
+      mysql_db: db={{ domain }} state=present
+
+    - name: Create a MySQL user for the application.
+      mysql_user:
+        name: "{{ domain }}"
+        password: "{{ db_user_password }}"
+        priv: "{{ domain }}.*:ALL"
+        host: localhost
+        state: present
+
+    - name: Download Composer installer.
+      get_url:
+        url: https://getcomposer.org/installer
+        dest: /tmp/composer-installer.php
+        mode: 0755
+
+    - name: Run Composer installer
+      command: >
+        php composer-installer.php
+        chdir=/tmp
+        creates=/usr/local/bin/composer
+
+    - name: Move Composer into globally-accessible location.
+      shell: >
+        mv /tmp/composer.phar /usr/local/bin/composer
+        creates=/usr/local/bin/composer
+
+    - name: Install Laravel Installer via Composer.
+      shell: >
+        /usr/local/bin/composer global require "laravel/installer"
+        creates=/home/{{ user }}/.config/composer/vendor/bin/laravel
+      become: false
+
+    - name: Create symlink for laravel installer.
+      file:
+        src: /home/{{ user }}/.config/composer/vendor/bin/laravel
+        dest: /usr/local/bin/laravel
+        state: link
