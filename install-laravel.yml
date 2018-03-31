@@ -50,6 +50,7 @@
         - php7.1-pdo
         - php7.1-mysql
         - php7.1-zip
+        - php7.1-fpm
         - php-apcu
         - libpcre3-dev
         - python-mysqldb
@@ -106,3 +107,37 @@
         src: /home/{{ user }}/.config/composer/vendor/bin/laravel
         dest: /usr/local/bin/laravel
         state: link
+
+    - name: Create a new Laravel project.
+      command: >
+        laravel new {{ laravel_project_name }}
+        chdir={{ home_directory }}/apps
+        creates={{ laravel_project_root }}/artisan
+
+    - name: Install Composer packages for Laravel application.
+      command: >
+        composer install
+        chdir={{ laravel_project_root }}
+        creates={{ laravel_project_root }}/vendor
+
+    - name: Generate Laravel application encryption key.
+      command: >
+        php artisan key:generate
+        chdir={{ laravel_project_root }}
+
+    - name: Update environment file.
+      lineinfile:
+        path: "{{ laravel_project_root }}/.env"
+        regexp: "^DB_DATABASE"
+        line: "DB_DATABASE={{ domain }}"
+        state: present
+    - lineinfile:
+        path: "{{ laravel_project_root }}/.env"
+        regexp: "^DB_USERNAME"
+        line: "DB_USERNAME={{ domain }}"
+        state: present
+    - lineinfile:
+        path: "{{ laravel_project_root }}/.env"
+        regexp: "^DB_PASSWORD"
+        line: "DB_PASSWORD={{ db_user_password }}"
+        state: present

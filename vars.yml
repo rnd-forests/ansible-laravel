@@ -1,3 +1,11 @@
 ---
 user: "vagrant"
-domain: "awesomelaravel"
+domain: "ansible-laravel"
+
+fpdn: "ansible-laravel.local"
+
+home_directory: "/home/vagrant"
+
+laravel_project_name: "ansible-laravel"
+laravel_project_root: "/home/vagrant/apps/ansible-laravel"
+laravel_project_public: "/var/www/ansible-laravel/public"
