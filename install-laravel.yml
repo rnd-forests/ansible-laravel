@@ -99,12 +99,12 @@
     - name: Install Laravel Installer via Composer.
       shell: >
         /usr/local/bin/composer global require "laravel/installer"
-        creates=/home/{{ user }}/.config/composer/vendor/bin/laravel
+        creates={{ home_directory }}/.config/composer/vendor/bin/laravel
       become: false
 
     - name: Create symlink for laravel installer.
       file:
-        src: /home/{{ user }}/.config/composer/vendor/bin/laravel
+        src: "{{ home_directory }}/.config/composer/vendor/bin/laravel"
         dest: /usr/local/bin/laravel
         state: link
 
