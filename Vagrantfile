@@ -5,7 +5,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-16.04"
   config.ssh.insert_key = false
   config.vm.synced_folder ".", "/vagrant", id: "vagrant"
-  config.vm.synced_folder "./apps", "/home/vagrant/apps", id: "apps"
+  config.vm.synced_folder "./apps", "/home/vagrant/apps", owner: "www-data", group: "www-data", id: "apps"
   config.vm.provider :virtualbox do |v|
     v.memory = 512
     v.linked_clone = true
