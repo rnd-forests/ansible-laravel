@@ -7,31 +7,44 @@
     - secrets/database.yml
 
   pre_tasks:
-    - name: Update apt cache.
-      apt: update_cache=yes cache_valid_time=3600
+    - name: Update packages information.
+      apt:
+        update_cache: yes
+        cache_valid_time:  3600
 
-    - name: Enable firewall.
-      ufw: state=enabled
+    - name: Enable UFW.
+      ufw:
+        state: enabled
 
-    - name: Allow OpenSSH connections.
-      ufw: name=OpenSSH rule=allow
+    - name: Allow SSH connections.
+      ufw:
+        name: OpenSSH
+        rule: allow
 
   handlers:
     - name: restart Nginx
-      service: name=nginx state=restarted
+      service:
+        name: nginx
+        state: restarted
 
   tasks:
     - name: Install software for apt repository management.
-      apt: name={{ item }} state=present
+      apt:
+        name: "{{ item }}"
+        state: present
       with_items:
         - python3-apt
         - python3-pycurl
 
-    - name: Add ondrej repository for later version of PHP
-      apt_repository: repo='ppa:ondrej/php' update_cache=yes
+    - name: Add ondrej repository for latest version of PHP.
+      apt_repository:
+        repo: ppa:ondrej/php
+        update_cache: yes
 
     - name: Install NGINX, MySQL, PHP, PHP extensions and other dependencies.
-      apt: name={{ item }} state=present
+      apt:
+        name: "{{ item }}"
+        state: present
       with_items:
         - git
         - curl
@@ -56,22 +69,31 @@
         - python-mysqldb
         - mysql-server
 
-    - name: Start NGINX, MySQL.
-      service: name={{ item }} state=started enabled=yes
+    - name: Start NGINX, MySQL services.
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
       with_items:
         - nginx
         - mysql
 
     - name: Adjust firewall to allow access to the nginx service.
-      ufw: name='Nginx HTTP' rule=allow
+      ufw:
+        name: Nginx HTTP
+        rule: allow
 
     - name: Remove the MySQL test database.
-      mysql_db: db=test state=absent
+      mysql_db:
+        db: test
+        state: absent
 
-    - name: Create a database for the application.
-      mysql_db: db={{ domain }} state=present
+    - name: Create new database for the application.
+      mysql_db:
+        db: "{{ domain }}"
+        state: present
 
-    - name: Create a MySQL user for the application.
+    - name: Create new MySQL user for the application.
       mysql_user:
         name: "{{ domain }}"
         password: "{{ db_user_password }}"
@@ -86,20 +108,20 @@
         mode: 0755
 
     - name: Run Composer installer
-      command: >
-        php composer-installer.php
-        chdir=/tmp
-        creates=/usr/local/bin/composer
+      command: php composer-installer.php
+      args:
+        chdir: /tmp
+        creates: /usr/local/bin/composer
 
     - name: Move Composer into globally-accessible location.
-      shell: >
-        mv /tmp/composer.phar /usr/local/bin/composer
-        creates=/usr/local/bin/composer
+      shell: mv /tmp/composer.phar /usr/local/bin/composer
+      args:
+        creates: /usr/local/bin/composer
 
     - name: Install Laravel Installer via Composer.
-      shell: >
-        /usr/local/bin/composer global require "laravel/installer"
-        creates={{ home_directory }}/.config/composer/vendor/bin/laravel
+      shell: /usr/local/bin/composer global require "laravel/installer"
+      args:
+        creates: "{{ home_directory }}/.config/composer/vendor/bin/laravel"
       become: false
 
     - name: Create symlink for laravel installer.
@@ -109,21 +131,21 @@
         state: link
 
     - name: Create a new Laravel project.
-      command: >
-        laravel new {{ laravel_project_name }}
-        chdir={{ home_directory }}/apps
-        creates={{ laravel_project_root }}/artisan
+      command: "laravel new {{ laravel_project_name }}"
+      args:
+        chdir: "{{ home_directory }}/apps"
+        creates: "{{ laravel_project_root }}/artisan"
 
     - name: Install Composer packages for Laravel application.
-      command: >
-        composer install
-        chdir={{ laravel_project_root }}
-        creates={{ laravel_project_root }}/vendor
+      command: composer install
+      args:
+        chdir: "{{ laravel_project_root }}"
+        creates: "{{ laravel_project_root }}/vendor"
 
     - name: Generate Laravel application encryption key.
-      command: >
-        php artisan key:generate
-        chdir={{ laravel_project_root }}
+      command: php artisan key:generate
+      args:
+        chdir: "{{ laravel_project_root }}"
 
     - name: Update environment file.
       lineinfile:
@@ -161,7 +183,7 @@
 
     - name: Add NGINX configuration file for Laravel application.
       template:
-        src: "templates/nginx/ansible-laravel.conf.j2"
+        src: templates/nginx/ansible-laravel.conf.j2
         dest: "/etc/nginx/sites-available/{{ domain }}.conf"
         owner: root
         group: root
@@ -171,6 +193,6 @@
     - name: Create new symbolic link for the configuration file.
       file:
         src: "/etc/nginx/sites-available/{{ domain }}.conf"
-        dest: "/etc/nginx/sites-enabled/default.conf"
+        dest: /etc/nginx/sites-enabled/default.conf
         state: link
       notify: restart Nginx

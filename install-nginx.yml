@@ -3,7 +3,7 @@
   become: yes
 
   tasks:
-    - name: Update apt cache.
+    - name: Update packages information.
       command: apt update
 
     - name: Install NGINX web server.
