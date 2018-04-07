@@ -22,10 +22,10 @@
         rule: allow
 
   handlers:
-    - name: restart Nginx
+    - name: reload Nginx
       service:
         name: nginx
-        state: restarted
+        state: reloaded
 
   tasks:
     - name: Install software for apt repository management.
@@ -179,7 +179,7 @@
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
-      notify: restart Nginx
+      notify: reload Nginx
 
     - name: Add NGINX configuration file for Laravel application.
       template:
@@ -188,11 +188,11 @@
         owner: root
         group: root
         mode: 0644
-      notify: restart Nginx
+      notify: reload Nginx
 
     - name: Create new symbolic link for the configuration file.
       file:
         src: "/etc/nginx/sites-available/{{ domain }}.conf"
         dest: /etc/nginx/sites-enabled/default.conf
         state: link
-      notify: restart Nginx
+      notify: reload Nginx
